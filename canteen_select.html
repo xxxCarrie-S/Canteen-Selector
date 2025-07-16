@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canteen Chooser</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .canteen-card {
+            transition: all 0.3s ease-in-out;
+        }
+        .canteen-card.highlight {
+            transform: scale(1.05);
+            box-shadow: 0 10px 15px -3px rgba(96, 165, 250, 0.5), 0 4px 6px -2px rgba(96, 165, 250, 0.25);
+            border-color: #3b82f6; /* blue-500 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="w-full max-w-2xl mx-auto p-4 md:p-8">
+        <div class="bg-white rounded-2xl shadow-lg p-8 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">今天吃什么</h1>
+            <p id="current-date" class="text-lg text-gray-600 mb-6"></p>
+
+            <!-- Canteens Display -->
+            <div id="canteens-container" class="grid grid-cols-3 gap-6 mb-8 max-w-2xl mx-auto">
+                <!-- Canteen cards will be inserted here by JavaScript -->
+            </div>
+
+            <button id="choose-btn" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 text-xl shadow-md hover:shadow-lg">
+                选择餐厅
+            </button>
+
+            <!-- Result Display -->
+            <div id="result" class="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200 min-h-[100px] flex items-center justify-center flex-col">
+                 <p class="text-gray-500 text-xl">请点击上面的按钮</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const canteens = [
+            { name: "西餐厅", emoji: "🍔" },
+            { name: "老食堂", emoji: "🥗" },
+            { name: "小食堂", emoji: "🌮" },
+            { name: "大食堂", emoji: "🍱" },
+            { name: "面馆", emoji: "🍜" }, 
+            { name: "KFC", emoji: "🍗" }
+        ];
+
+        // --- DOM Elements ---
+        const chooseBtn = document.getElementById('choose-btn');
+        const resultDiv = document.getElementById('result');
+        const canteensContainer = document.getElementById('canteens-container');
+
+        // --- Functions ---
+
+        /**
+         * Displays the current date
+         */
+        function displayCurrentDate() {
+            const today = new Date();
+            const options = { 
+                weekday: 'long'
+            };
+            const dateString = today.toLocaleDateString('zh-CN', options);
+            document.getElementById('current-date').textContent = dateString;
+        }
+        
+        /**
+         * Renders the canteen cards on the page.
+         */
+        function renderCanteens() {
+            canteensContainer.innerHTML = ''; // Clear existing cards
+            canteens.forEach((canteen, index) => {
+                const card = document.createElement('div');
+                card.id = `canteen-${index}`;
+                let cardClass = 'canteen-card bg-white p-4 rounded-lg border-2 border-gray-200 text-center';
+                
+                card.className = cardClass;
+                card.innerHTML = `
+                    <div class="text-4xl mb-2">${canteen.emoji}</div>
+                    <div class="font-semibold text-gray-700">${canteen.name}</div>
+                `;
+                canteensContainer.appendChild(card);
+            });
+        }
+
+
+        /**
+         * Handles the logic for choosing a canteen.
+         */
+        function chooseCanteen() {
+            // Disable button to prevent multiple clicks during animation
+            chooseBtn.disabled = true;
+            chooseBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            // Clear previous result and highlights
+            resultDiv.innerHTML = '<p class="text-gray-500 text-xl">Choosing...</p>';
+            document.querySelectorAll('.canteen-card').forEach(card => {
+                card.classList.remove('highlight');
+            });
+
+            let highlightCount = 0;
+            const maxHighlights = canteens.length * 2; // How many times to jump between cards
+            let currentIndex = Math.floor(Math.random() * canteens.length);
+
+            const highlightInterval = setInterval(() => {
+                // Remove highlight from the previous card
+                document.getElementById(`canteen-${currentIndex}`).classList.remove('highlight');
+
+                // Move to the next card
+                currentIndex = (currentIndex + 1) % canteens.length;
+
+                // Highlight the new current card
+                document.getElementById(`canteen-${currentIndex}`).classList.add('highlight');
+
+                highlightCount++;
+
+                if (highlightCount >= maxHighlights) {
+                    clearInterval(highlightInterval);
+                    finalizeSelection();
+                }
+            }, 150); 
+        }
+
+        /**
+         * Finalizes the selection process after the animation.
+         * This function includes weighted probability.
+         */
+        function finalizeSelection() {
+            const randomNumber = Math.random(); // Generates a float between 0.0 and 1.0
+            let chosenCanteen;
+            let chosenIndex;
+            
+            // Get the current date
+            const today = new Date().getDay();
+            const isThursday = today === 4;
+            const isSaturday = today === 6;
+            const isSunday = today === 0;
+
+            if (isThursday){
+                if (randomNumber < 0.3333) {
+                    chosenIndex = canteens.findIndex(c => c.name === "KFC");
+                } else if (randomNumber < 0.3733){
+                    chosenIndex = canteens.findIndex(c => c.name === "西餐厅");
+                } else if (randomNUmer < 0.4133){
+                    chosenIndex = canteens.findIndex(c => c.name === "小食堂")
+                } else{
+                    const otherCanteens = canteens.filter(c => c.name !== "KFC" && c.name !== "西餐厅" && c.name !== "小食堂");
+                    const randomIndexInOthers = Math.floor(Math.random() * otherCanteens.length);
+                    chosenIndex = canteens.findIndex(c => c.name === otherCanteens[randomIndexInOthers].name);
+                }
+            }
+            else if(isSaturday){
+                if (randomNumber < 0.01){
+                    chosenIndex = canteens.findIndex(c => c.name === "KFC");
+                } else if (randomNumber < 0.05){
+                    chosenIndex = canteens.findIndex(c => c.name === "西餐厅");
+                } else if (randomNumber < 0.25){
+                    chosenIndex = canteens.findIndex(c => c.name === "小食堂");
+                } else{
+                    const otherCanteens = canteens.filter(c => c.name !== "KFC" && c.name !== "西餐厅" && c.name !== "小食堂");
+                    const randomIndexInOthers = Math.floor(Math.random() * otherCanteens.length);
+                    chosenIndex = canteens.findIndex(c => c.name === otherCanteens[randomIndexInOthers].name);
+                }
+            } 
+            else if (isSunday){
+                if (randomNumber < 0.3){
+                    chosenIndex = canteens.findIndex(c => c.name === "西餐厅");
+                } else if (randomNumber < 0.31){
+                    chosenIndex = canteens.findIndex(c => c.name === "KFC");
+                } else if (randomNumber < 0.35){
+                    chosenIndex = canteens.findIndex(c => c.name === "小食堂");
+                } else{
+                    const otherCanteens = canteens.filter(c => c.name !== "KFC" && c.name !== "西餐厅" && c.name !== "小食堂");
+                    const randomIndexInOthers = Math.floor(Math.random() * otherCanteens.length);
+                    chosenIndex = canteens.findIndex(c => c.name === otherCanteens[randomIndexInOthers].name);
+                }
+            } 
+            else{
+                if (randomNumber < 0.01){
+                    chosenIndex = canteens.findIndex(c => c.name === "KFC");
+                } else if (randomNumber < 0.05){
+                    chosenIndex = canteens.findIndex(c => c.name === "小食堂");
+                } else if (randomNumber < 0.09){
+                    chosenIndex = canteens.findIndex(c => c.name === "西餐厅");
+                } else{
+                    const otherCanteens = canteens.filter(c => c.name !== "KFC" && c.name !== "西餐厅" && c.name !== "小食堂");
+                    const randomIndexInOthers = Math.floor(Math.random() * otherCanteens.length);
+                    chosenIndex = canteens.findIndex(c => c.name === otherCanteens[randomIndexInOthers].name);
+                }
+            } 
+
+
+            chosenCanteen = canteens[chosenIndex];
+
+            // Ensure the final choice is highlighted
+            document.querySelectorAll('.canteen-card').forEach((card, index) => {
+                if (index === chosenIndex) {
+                    card.classList.add('highlight');
+                } else {
+                    card.classList.remove('highlight');
+                }
+            });
+
+            // Display the final result
+            resultDiv.innerHTML = `
+                <h2 class="text-2xl font-bold text-blue-600">今天的选择是...</h2>
+                <p class="text-4xl font-bold text-gray-800 mt-2">${chosenCanteen.name} ${chosenCanteen.emoji}</p>
+            `;
+
+            // Re-enable the button
+            chooseBtn.disabled = false;
+            chooseBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+
+        // --- Event Listeners ---
+        chooseBtn.addEventListener('click', chooseCanteen);
+        
+        // --- Initial Load ---
+        window.onload = () => {
+            displayCurrentDate();
+            renderCanteens();
+        };
+
+    </script>
+</body>
+</html>
